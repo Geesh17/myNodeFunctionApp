@@ -1,4 +1,4 @@
-name: Deploy Node.js Azure Function App
+name: Deploy to Azure Function App using Azure CLI
 
 on:
   push:
@@ -11,23 +11,33 @@ jobs:
 
     steps:
     # Checkout the repository
-    - name: 'Checkout GitHub Action'
+    - name: 'Checkout repository'
       uses: actions/checkout@v2
 
     # Set up Node.js environment
     - name: 'Set up Node.js'
       uses: actions/setup-node@v3
       with:
-        node-version: '14.x' # You can specify your node version here
+        node-version: '20.x' # Specify your node version here
 
     # Install npm dependencies
     - name: 'Install Dependencies'
       run: npm install
 
-    # Publish the Azure Function App using the Azure Functions Action
-    - name: 'Deploy to Azure Functions'
-      uses: Azure/functions-action@v1
+    # Authenticate to Azure using the service principal
+    - name: 'Login to Azure'
+      uses: azure/login@v1
       with:
-        app-name: 'myNodeFunctionApp1706' # Replace with your Function App name
-        package: '.'
-        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    # Zip the function app code (or specific files/folders) for deployment
+    - name: 'Create ZIP package for deployment'
+      run: zip -r functionapp.zip .
+
+    # Deploy to Azure Function App using az CLI
+    - name: 'Deploy to Azure Function App'
+      run: |
+        az functionapp deployment source config-zip \
+          --resource-group DefaultResourceGroup-CCAN \
+          --name myNodeFunctionApp1706 \
+          --src functionapp.zip
